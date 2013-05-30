@@ -3,9 +3,10 @@ package org.fmi.dai.simulator
 import java.util.Date
 import scala.actors.Actor
 import scala.actors.TIMEOUT
+import org.fmi.dai.config.AuctionConfig
 
 class AuctionHouse(seller: Actor, minBid: Int, closing: Date) extends Actor {
-    val timeToShutdown = 3000 // msec
+
     val bidIncrement = 10
 
     def act() {
@@ -15,19 +16,19 @@ class AuctionHouse(seller: Actor, minBid: Int, closing: Date) extends Actor {
         loop {
             reactWithin(closing.getTime() - new Date().getTime()) {
 
-                case Offer(bid, client) =>
+                case Offer(bid, buyer) =>
                     if (bid >= maxBid + bidIncrement) {
                         if (maxBid >= minBid) maxBidder ! BeatenOffer(bid)
                         maxBid = bid
-                        maxBidder = client
-                        client ! BestOffer
+                        maxBidder = buyer
+                        buyer ! BestOffer
                     }
                     else {
-                        client ! BeatenOffer(maxBid)
+                        buyer ! BeatenOffer(maxBid)
                     }
 
-                case Inquire(client) =>
-                    client ! Status(maxBid, closing)
+                case Inquire(buyer) =>
+                    buyer ! Status(maxBid, closing)
 
                 case TIMEOUT =>
                     if (maxBid >= minBid) {
@@ -38,9 +39,9 @@ class AuctionHouse(seller: Actor, minBid: Int, closing: Date) extends Actor {
                     else {
                         seller ! AuctionFailed
                     }
-                    reactWithin(timeToShutdown) {
-                        case Offer(_, client) => client ! AuctionOver
-                        case TIMEOUT          => exit()
+                    reactWithin(AuctionConfig.AUCTION_HOUSE_TIME_TO_SHUTDOWN) {
+                        case Offer(_, buyer) => buyer ! AuctionOver
+                        case TIMEOUT         => exit()
                     }
 
             }
