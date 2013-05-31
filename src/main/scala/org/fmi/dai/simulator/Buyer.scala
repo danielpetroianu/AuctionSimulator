@@ -2,54 +2,66 @@ package org.fmi.dai.simulator
 
 import scala.actors.Actor
 import scala.actors.TIMEOUT
+import org.fmi.dai.config.AuctionConfig
 
-class Buyer(name: String, increment: Int, top: Int, auctionHouse: AuctionHouse) extends Actor {
+class Buyer(name: String, increment: Int, top: Int) extends Person {
     import App._;
 
     val random = new scala.util.Random
-
-    var max: Int = _
-    var current: Int = 0
+    var _maxBid: Int = _
+    var _current: Int = 0
+    var _auctionHouse: AuctionEngine = null
 
     def act() {
 
-        logger.info("started")
-        auctionHouse ! Inquire(this)
+        log("joined the Auction as a Buyer.")
+
+        _auctionHouse ! Inquire(this)
         receive {
             case Status(maxBid, _) =>
-                logger.info("status(" + maxBid + ")")
-                max = maxBid
+                log("status(" + maxBid + ")")
+                _maxBid = maxBid
         }
 
         loop {
-            if (max >= top) {
-                logger.info("too high for me")
+            if (_maxBid >= top) {
+                log("I'm not going to pay that much for it. I'm out.")
             }
-            else if (current < max) {
-                current = max + increment
+            else if (_current < _maxBid) {
+                _current = _maxBid + increment
                 Thread.sleep(1 + random.nextInt(1000))
-                auctionHouse ! Offer(current, this)
+                _auctionHouse ! Offer(_current, this)
             }
 
-            reactWithin(3000) {
+            reactWithin(AuctionConfig.AUCTION_HOUSE_TIME_TO_SHUTDOWN) {
                 case BestOffer =>
-                    logger.info("bestOffer(" + current + ")")
+                    log("( i have the best offer - " + _current + ")")
 
                 case BeatenOffer(maxBid) =>
-                    logger.info("beatenOffer(" + maxBid + ")")
-                    max = maxBid
+                    log("( my offer was beaten - new bid is " + maxBid + ")")
+                    _maxBid = maxBid
 
-                case AuctionConcluded(seller, maxBidder) =>
-                    logger.info("auctionConcluded"); exit()
+                case AuctionConcluded(seller, maxBidder, bid) =>
+                    log("Yes!! I'm taking this item home for " + bid + ".")
+                    exit()
 
                 case AuctionOver =>
-                    logger.info("auctionOver"); exit()
+                    log("That item simply wasn't good enough for my money.")
+                    exit()
 
                 case TIMEOUT =>
                     exit()
             }
         }
 
+    }
+
+    def attendAuction(auction: AuctionEngine) {
+        _auctionHouse = auction;
+    }
+
+    def name(): String = {
+        name
     }
 
 }

@@ -53,12 +53,12 @@
 			<version>${scala.version}</version>
 		</dependency>
 
-		<dependency>
+		<!-- <dependency>
 			<groupId>com.dongxiguo</groupId>
 			<artifactId>zero-log_2.10</artifactId>
 			<version>0.3.3</version>
 			<scope>compile</scope>
-		</dependency>
+		</dependency> -->
 
 	</dependencies>
 

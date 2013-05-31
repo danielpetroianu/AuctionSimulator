@@ -3,22 +3,22 @@ package org.fmi.dai.simulator
 import org.fmi.dai.config.ZeroLoggerFactory
 import scala.actors.Actor
 import java.util.Date
+import org.fmi.dai.config.AuctionConfig
 
 object App {
 
-    implicit val (logger, formatter, appender) = ZeroLoggerFactory.newLogger(this)
-
     def main(args: Array[String]) {
-        val minBid = 100
-        val closing = new Date(new Date().getTime() + 4000)
-        val seller = Actor.actor {}
+        val startBid = 100
+        val closing = new Date(new Date().getTime() + AuctionConfig.AUCTION_TIME)
 
-        val actionHouse = new AuctionHouse(seller, minBid, closing)
+        new AuctionEngine(startBid, closing,
+            new Seller("John Doe"),
+            List(
+                new Buyer("Barry Weiss", 20, 800),
+                new Buyer("Jarrod Schulz", 30, 3000),
+                new Buyer("Darrell Sheets", 40, 5000),
+                new Buyer("Dave Hester", 40, 5000)
+            )).start()
 
-        seller.start()
-        actionHouse.start()
-
-        new Buyer("Ion", 20, 100, actionHouse).start()
-        new Buyer("Vasile", 30, 300, actionHouse).start()
     }
 }

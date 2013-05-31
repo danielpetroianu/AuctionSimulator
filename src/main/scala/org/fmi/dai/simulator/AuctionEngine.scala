@@ -5,23 +5,22 @@ import scala.actors.Actor
 import scala.actors.TIMEOUT
 import org.fmi.dai.config.AuctionConfig
 
-class AuctionHouse(seller: Actor, minBid: Int, closing: Date) extends Actor {
-
-    val bidIncrement = 10
+class AuctionEngine(minBid: Int, closing: Date, seller: Person, listOfBuyers: List[Person]) extends Actor {
+    val _bidIncrement = 10
 
     def act() {
-        var maxBid = minBid - bidIncrement
-        var maxBidder: Actor = null
+        var maxBid = minBid - _bidIncrement
+        var topBuyer: Person = null
 
         loop {
-            reactWithin(closing.getTime() - new Date().getTime()) {
+            reactWithin(positiveOrZero(closing.getTime() - new Date().getTime())) {
 
                 case Offer(bid, buyer) =>
-                    if (bid >= maxBid + bidIncrement) {
-                        if (maxBid >= minBid) maxBidder ! BeatenOffer(bid)
+                    if (bid >= maxBid + _bidIncrement) {
+                        if (maxBid >= minBid) topBuyer ! BeatenOffer(bid)
                         maxBid = bid
-                        maxBidder = buyer
-                        buyer ! BestOffer
+                        topBuyer = buyer
+                        topBuyer ! BestOffer
                     }
                     else {
                         buyer ! BeatenOffer(maxBid)
@@ -32,8 +31,8 @@ class AuctionHouse(seller: Actor, minBid: Int, closing: Date) extends Actor {
 
                 case TIMEOUT =>
                     if (maxBid >= minBid) {
-                        val reply = AuctionConcluded(seller, maxBidder)
-                        maxBidder ! reply
+                        val reply = AuctionConcluded(seller, topBuyer, maxBid)
+                        topBuyer ! reply
                         seller ! reply
                     }
                     else {
@@ -47,4 +46,20 @@ class AuctionHouse(seller: Actor, minBid: Int, closing: Date) extends Actor {
             }
         }
     }
+
+    override def start(): Actor = synchronized {
+        super.start()
+
+        seller.attendAuction(this)
+        seller.start()
+
+        listOfBuyers.foreach { buyer =>
+            buyer.attendAuction(this)
+            buyer.start()
+        }
+
+        this
+    }
+
+    def positiveOrZero(number: Long): Long = if (number > 0) number else 0
 }
