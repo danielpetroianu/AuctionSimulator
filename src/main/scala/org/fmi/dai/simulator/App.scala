@@ -1,6 +1,5 @@
 package org.fmi.dai.simulator
 
-import org.fmi.dai.config.ZeroLoggerFactory
 import scala.actors.Actor
 import java.util.Date
 import org.fmi.dai.config.AuctionConfig
@@ -19,6 +18,5 @@ object App {
                 new Buyer("Darrell Sheets", 40, 5000),
                 new Buyer("Dave Hester", 40, 5000)
             )).start()
-
     }
 }

@@ -10,14 +10,14 @@ trait Person extends Actor {
     def log(msg: String) = { Console.println(name + ": " + msg) }
 }
 
-trait AuctionMessage
-case class Offer(bid: Int, buyer: Person) extends AuctionMessage // make a bid
-case class Inquire(buyer: Person) extends AuctionMessage // inquire status
+trait PersonAction
+case class Offer(bid: Int, buyer: Person) extends PersonAction // a person makes a bid
+case class Inquire(buyer: Person) extends PersonAction // a person request the status of the auction
 
 trait AuctionReply
-case class Status(asked: Int, expiration: Date) extends AuctionReply // asked sum, expiration date
-case class BeatenOffer(maxBid: Int) extends AuctionReply // offer beaten by maxBid
-case class AuctionConcluded(seller: Person, buyer: Person, bid: Int) extends AuctionReply // auction concluded
+case class Status(maxBid: Int, expiration: Date) extends AuctionReply // auction replies the status, the max bid and when it expires 
+case class BeatenOffer(maxBid: Int) extends AuctionReply // auction replies with the best offer
+case class AuctionConcluded(seller: Person, buyer: Person, bid: Int) extends AuctionReply // auction is over
 case object BestOffer extends AuctionReply // yours is the best offer 
 case object AuctionFailed extends AuctionReply // failed with no bids
 case object AuctionOver extends AuctionReply // bidding is closed
