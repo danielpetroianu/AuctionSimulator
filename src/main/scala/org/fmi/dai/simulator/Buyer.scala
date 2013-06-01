@@ -16,7 +16,7 @@ class Buyer(name: String, increment: Int, top: Int) extends Person {
 
         log("joined the Auction as a Buyer.")
 
-        _auctionHouse ! Inquire(this)
+        _auctionHouse ! InquireBid(this)
         receive {
             case Status(maxBid, _) =>
                 log("status(" + maxBid + ")")

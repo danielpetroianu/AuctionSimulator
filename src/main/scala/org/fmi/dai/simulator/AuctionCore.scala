@@ -12,7 +12,7 @@ trait Person extends Actor {
 
 trait PersonAction
 case class Offer(bid: Int, buyer: Person) extends PersonAction // a person makes a bid
-case class Inquire(buyer: Person) extends PersonAction // a person request the status of the auction
+case class InquireBid(buyer: Person) extends PersonAction // a person request the status of the auction
 
 trait AuctionReply
 case class Status(maxBid: Int, expiration: Date) extends AuctionReply // auction replies the status, the max bid and when it expires 

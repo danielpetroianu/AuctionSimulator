@@ -5,19 +5,22 @@ import scala.actors.Actor
 import scala.actors.TIMEOUT
 import org.fmi.dai.config.AuctionConfig
 
-class AuctionEngine(minBid: Int, closing: Date, seller: Person, listOfBuyers: List[Person]) extends Actor {
+class AuctionEngine(startBid: Int, closing: Date, seller: Person, listOfBuyers: List[Person]) extends Actor {
     val _bidIncrement = 10
 
     def act() {
-        var maxBid = minBid - _bidIncrement
+        var maxBid = startBid - _bidIncrement
         var topBuyer: Person = null
 
         loop {
             reactWithin(positiveOrZero(closing.getTime() - new Date().getTime())) {
 
+                case InquireBid(buyer) =>
+                    buyer ! Status(maxBid, closing)
+
                 case Offer(bid, buyer) =>
                     if (bid >= maxBid + _bidIncrement) {
-                        if (maxBid >= minBid) topBuyer ! BeatenOffer(bid)
+                        if (maxBid >= startBid) topBuyer ! BeatenOffer(bid)
                         maxBid = bid
                         topBuyer = buyer
                         topBuyer ! BestOffer
@@ -26,11 +29,8 @@ class AuctionEngine(minBid: Int, closing: Date, seller: Person, listOfBuyers: Li
                         buyer ! BeatenOffer(maxBid)
                     }
 
-                case Inquire(buyer) =>
-                    buyer ! Status(maxBid, closing)
-
                 case TIMEOUT =>
-                    if (maxBid >= minBid) {
+                    if (maxBid >= startBid) {
                         val reply = AuctionConcluded(seller, topBuyer, maxBid)
                         topBuyer ! reply
                         seller ! reply
@@ -38,6 +38,7 @@ class AuctionEngine(minBid: Int, closing: Date, seller: Person, listOfBuyers: Li
                     else {
                         seller ! AuctionFailed
                     }
+
                     reactWithin(AuctionConfig.AUCTION_HOUSE_TIME_TO_SHUTDOWN) {
                         case Offer(_, buyer) => buyer ! AuctionOver
                         case TIMEOUT         => exit()
