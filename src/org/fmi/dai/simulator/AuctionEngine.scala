@@ -5,21 +5,20 @@ import scala.actors.Actor
 import scala.actors.TIMEOUT
 import org.fmi.dai.config.AuctionConfig
 
-class AuctionEngine(startBid: Int, closing: Date, seller: Person, listOfBuyers: List[Person]) extends Actor {
-    val _bidIncrement = 10
+class AuctionEngine(startBid: Int, duration: Date, seller: Person, listOfBuyers: List[Person]) extends Actor {
 
     def act() {
-        var maxBid = startBid - _bidIncrement
+        var maxBid = startBid - AuctionConfig.AUCTION_BID_INCREMENT_THRESHOLD
         var topBuyer: Person = null
 
         loop {
-            reactWithin(positiveOrZero(closing.getTime() - new Date().getTime())) {
+            reactWithin(positiveOrZero(duration.getTime() - new Date().getTime())) {
 
                 case InquireBid(buyer) =>
-                    buyer ! Status(maxBid, closing)
+                    buyer ! Status(maxBid, duration)
 
                 case Offer(bid, buyer) =>
-                    if (bid >= maxBid + _bidIncrement) {
+                    if (bid >= maxBid + AuctionConfig.AUCTION_BID_INCREMENT_THRESHOLD) {
                         if (maxBid >= startBid) topBuyer ! BeatenOffer(bid)
                         maxBid = bid
                         topBuyer = buyer
@@ -39,9 +38,12 @@ class AuctionEngine(startBid: Int, closing: Date, seller: Person, listOfBuyers: 
                         seller ! AuctionFailed
                     }
 
-                    reactWithin(AuctionConfig.AUCTION_HOUSE_TIME_TO_SHUTDOWN) {
-                        case Offer(_, buyer) => buyer ! AuctionOver
-                        case TIMEOUT         => exit()
+                    reactWithin(AuctionConfig.AUCTION_CLOSING_DELAY) {
+                        case Offer(_, buyer) =>
+                            log("Sorry " + buyer.name + ", the auction is closed.")
+                            buyer ! AuctionOver
+
+                        case TIMEOUT => exit()
                     }
 
             }
@@ -62,5 +64,7 @@ class AuctionEngine(startBid: Int, closing: Date, seller: Person, listOfBuyers: 
         this
     }
 
-    def positiveOrZero(number: Long): Long = if (number > 0) number else 0
+    def positiveOrZero(number: Long): Long = { if (number > 0) number else 0 }
+
+    def log(msg: String) = { Console.println("AuctionHouse: " + msg) }
 }

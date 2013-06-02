@@ -11,8 +11,8 @@ class Seller(name: String) extends Person {
         log("joined the Auction as a Seller.")
 
         receive {
-            case AuctionConcluded(_, maxBidder, bid) =>
-                log(":) Sold my item to " + maxBidder.name + " for " + bid + ".")
+            case AuctionConcluded(_, topBidder, bid) =>
+                log(":) Sold my item to " + topBidder.name + " for " + bid + ".")
                 exit()
 
             case AuctionFailed =>

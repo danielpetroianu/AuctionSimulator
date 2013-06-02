@@ -29,11 +29,11 @@ class Buyer(name: String, increment: Int, top: Int) extends Person {
             }
             else if (_current < _maxBid) {
                 _current = _maxBid + increment
-                Thread.sleep(1 + random.nextInt(1000))
+                Thread.sleep(1 + random.nextInt(AuctionConfig.BUYER_MAX_TIME_TO_THINK_ABOUT_OFFER))
                 _auctionHouse ! Offer(_current, this)
             }
 
-            reactWithin(AuctionConfig.AUCTION_HOUSE_TIME_TO_SHUTDOWN) {
+            reactWithin(AuctionConfig.AUCTION_DURATION + AuctionConfig.AUCTION_CLOSING_DELAY) {
                 case BestOffer =>
                     log("( i have the best offer - " + _current + ")")
 
@@ -46,10 +46,11 @@ class Buyer(name: String, increment: Int, top: Int) extends Person {
                     exit()
 
                 case AuctionOver =>
-                    log("That item simply wasn't good enough for my money.")
+                    log("I took too long to think about my offer.")
                     exit()
 
                 case TIMEOUT =>
+                    log("I'm going home empty handed.")
                     exit()
             }
         }

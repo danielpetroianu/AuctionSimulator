@@ -3,12 +3,19 @@ package org.fmi.dai.simulator
 import scala.actors.Actor
 import java.util.Date
 
+//***************************
+// 
+//***************************
 trait Person extends Actor {
     def name(): String
     def attendAuction(auction: AuctionEngine)
 
     def log(msg: String) = { Console.println(name + ": " + msg) }
 }
+
+//***************************
+// ACTOR MESSAGES
+//***************************
 
 trait PersonAction
 case class Offer(bid: Int, buyer: Person) extends PersonAction // a person makes a bid
